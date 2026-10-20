@@ -1,123 +1,109 @@
-"""PawPal+ core classes (skeleton based on diagrams/uml.mmd)."""
+"""Core domain classes for the PawPal+ pet-care scheduler."""
 
 from dataclasses import dataclass, field
-from datetime import date as Date
+from datetime import date, timedelta
 
 
 @dataclass
-class Owner:
-    """The pet owner; supplies the time limit and preferences the scheduler must respect."""
+class Task:
+    """Represent one pet-care activity."""
 
-    name: str
-    available_minutes: int
-    preferences: dict = field(default_factory=dict)
+    description: str
+    time: str
+    frequency: str = "once"
+    completed: bool = False
+    pet: "Pet | None" = None
+    due_date: date = field(default_factory=date.today)
 
-    def update_preferences(self, preferences: dict) -> None:
-        """Merge new preferences into the owner's existing preferences."""
-        pass
-
-    def has_time_for(self, duration_minutes: int) -> bool:
-        """Return True if the owner has enough available minutes for a task."""
-        pass
-
-    def describe(self) -> str:
-        """Return a short human-readable summary of the owner."""
-        pass
+    def mark_complete(self) -> "Task | None":
+        """Mark this task complete and return its next occurrence when recurring."""
+        self.completed = True
+        if self.frequency == "daily":
+            next_date = self.due_date + timedelta(days=1)
+        elif self.frequency == "weekly":
+            next_date = self.due_date + timedelta(days=7)
+        else:
+            return None
+        return Task(self.description, self.time, self.frequency, pet=self.pet, due_date=next_date)
 
 
 @dataclass
 class Pet:
-    """The pet that care tasks are planned for."""
+    """Store identifying information and the pet's care tasks."""
 
     name: str
     species: str
-    age: int
-    needs: list[str] = field(default_factory=list)
+    tasks: list[Task] = field(default_factory=list)
 
-    def add_need(self, need: str) -> None:
-        """Record a care need for this pet."""
-        pass
+    def add_task(self, task: Task) -> None:
+        """Add a task to this pet and link the task back to the pet."""
+        task.pet = self
+        self.tasks.append(task)
 
-    def remove_need(self, need: str) -> None:
-        """Remove a care need from this pet."""
-        pass
-
-    def describe(self) -> str:
-        """Return a short human-readable summary of the pet."""
-        pass
+    def list_tasks(self) -> list[Task]:
+        """Return all tasks belonging to this pet."""
+        return list(self.tasks)
 
 
 @dataclass
-class CareTask:
-    """A single care activity such as feeding, walking, medication, or grooming."""
+class Owner:
+    """Manage an owner's pets and provide access to all of their tasks."""
 
-    title: str
-    duration_minutes: int
-    priority: int
-    pet: Pet
-    preferred_time: str | None = None
-    completed: bool = False
+    name: str
+    pets: list[Pet] = field(default_factory=list)
 
-    def mark_complete(self) -> None:
-        """Mark this task as completed."""
-        pass
+    def add_pet(self, pet: Pet) -> None:
+        """Add a pet to the owner's household."""
+        self.pets.append(pet)
 
-    def is_eligible(self, preferences: dict) -> bool:
-        """Return True if this task fits the owner's preferences."""
-        pass
-
-    def describe(self) -> str:
-        """Return a short human-readable summary of the task."""
-        pass
-
-
-@dataclass
-class DailyPlan:
-    """The scheduler's output: which tasks were scheduled, which were skipped, and why."""
-
-    date: Date
-    scheduled_tasks: list[tuple[CareTask, str]] = field(default_factory=list)  # (task, start_time)
-    skipped_tasks: list[tuple[CareTask, str]] = field(default_factory=list)  # (task, reason)
-    total_minutes: int = 0
-    explanation: str = ""
-
-    def add_task(self, task: CareTask, start_time: str) -> None:
-        """Add a task to the plan at the given start time."""
-        pass
-
-    def skip_task(self, task: CareTask, reason: str) -> None:
-        """Record a task that was left out of the plan, with the reason."""
-        pass
-
-    def remaining_minutes(self) -> int:
-        """Return how many of the owner's minutes are still unscheduled."""
-        pass
-
-    def display(self) -> str:
-        """Return the plan formatted for display in the UI."""
-        pass
+    def get_all_tasks(self) -> list[Task]:
+        """Return tasks from every pet in the household."""
+        return [task for pet in self.pets for task in pet.list_tasks()]
 
 
 @dataclass
 class Scheduler:
-    """Builds a DailyPlan from the owner's constraints and the pet's care tasks."""
+    """Organize and manage tasks across all of an owner's pets."""
 
     owner: Owner
-    pet: Pet
-    tasks: list[CareTask] = field(default_factory=list)
 
-    def prioritize_tasks(self) -> list[CareTask]:
-        """Return tasks ordered from highest to lowest priority."""
-        pass
+    def sort_by_time(self, tasks: list[Task] | None = None) -> list[Task]:
+        """Return household tasks in chronological HH:MM order."""
+        source = self.owner.get_all_tasks() if tasks is None else tasks
+        return sorted(source, key=lambda task: task.time)
 
-    def filter_tasks(self) -> list[CareTask]:
-        """Return only the tasks that are eligible under the owner's preferences."""
-        pass
+    def filter_tasks(
+        self,
+        pet_name: str | None = None,
+        completed: bool | None = None,
+    ) -> list[Task]:
+        """Filter household tasks by pet name and completion status."""
+        tasks = self.owner.get_all_tasks()
+        if pet_name is not None:
+            tasks = [task for task in tasks if task.pet and task.pet.name == pet_name]
+        if completed is not None:
+            tasks = [task for task in tasks if task.completed is completed]
+        return tasks
 
-    def create_plan(self) -> DailyPlan:
-        """Build and return a DailyPlan that fits within the owner's available time."""
-        pass
+    def detect_conflicts(self, tasks: list[Task] | None = None) -> list[str]:
+        """Return warnings for tasks assigned to the same exact time."""
+        ordered = self.sort_by_time(tasks)
+        warnings = []
+        for index, task in enumerate(ordered):
+            for other in ordered[index + 1 :]:
+                if task.time != other.time:
+                    break
+                warnings.append(
+                    f"Conflict at {task.time}: {task.description} and {other.description}."
+                )
+        return warnings
 
-    def explain_plan(self) -> str:
-        """Return an explanation of why tasks were scheduled or skipped."""
-        pass
+    def mark_task_complete(self, task: Task) -> Task | None:
+        """Complete a task and add its next recurring occurrence to the same pet."""
+        next_task = task.mark_complete()
+        if next_task is not None and task.pet is not None:
+            task.pet.add_task(next_task)
+        return next_task
+
+
+CareTask = Task

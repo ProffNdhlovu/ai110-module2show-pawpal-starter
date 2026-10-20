@@ -22,6 +22,46 @@ Your final app should:
 - Display the plan clearly (and ideally explain the reasoning)
 - Include tests for the most important scheduling behaviors
 
+## Implementation Summary
+
+PawPal+ uses four core classes. `Owner` manages multiple `Pet` objects and exposes every task through `get_all_tasks()`. Each `Pet` owns a collection of `Task` objects. `Task` stores a description, `HH:MM` time, frequency, due date, completion status, and assigned pet. `Scheduler` reads tasks from the owner, sorts them by time, filters them by pet or completion status, detects exact-time conflicts, and creates the next occurrence of recurring tasks.
+
+## Building Blocks
+
+The main objects in PawPal+ are:
+
+### Owner
+
+**Attributes:** `name`, `pets`
+
+**Methods:** `add_pet()`, `get_all_tasks()`
+
+The owner provides the time limit and preferences that the scheduler must respect.
+
+### Pet
+
+**Attributes:** `name`, `species`, `tasks`
+
+**Methods:** `add_task()`, `list_tasks()`
+
+The pet identifies who the care tasks are for and records relevant care needs.
+
+### Task
+
+**Attributes:** `description`, `time`, `frequency`, `completed`, `pet`, `due_date`
+
+**Methods:** `mark_complete()`
+
+A care task represents one activity, such as feeding, walking, medication, grooming, or enrichment.
+
+### Scheduler
+
+**Attributes:** `owner`
+
+**Methods:** `sort_by_time()`, `filter_tasks()`, `detect_conflicts()`, `mark_task_complete()`
+
+The scheduler operates across all pets by calling `Owner.get_all_tasks()` rather than reading from one pet.
+
 ## Getting started
 
 ### Setup
@@ -42,53 +82,60 @@ pip install -r requirements.txt
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
 
-## 🖥️ Sample Output
+## CLI Demo
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
+Run the end-to-end demo with:
 
+```bash
+python3 main.py
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+
+Sample output:
+
+```text
+Today's Schedule
+07:30 - Luna: Breakfast
+08:00 - Mochi: Morning walk
+08:00 - Mochi: Medication
+
+Mochi's tasks
+08:00 - Morning walk
+08:00 - Medication
+
+Warnings
+Conflict at 08:00: Morning walk and Medication.
+
+Recurring task: Morning walk due on 2026-10-20
 ```
 
 ## 🧪 Testing PawPal+
 
-```bash
-# Run the full test suite:
-pytest
+Run the test suite with `python3 -m pytest`.
 
-# Run with coverage:
-pytest --cov
+The tests cover task completion, adding tasks to pets, multi-pet sorting, pet filtering, conflict detection, and daily recurrence.
+
+```text
+.....                                                                    [100%]
+5 passed in 0.01s
 ```
 
-Sample test output:
-
-```
-# Paste your pytest output here
-```
-
-## 📐 Smarter Scheduling
-
-> Fill in once you've implemented scheduling logic.
+## Smarter Scheduling
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.sort_by_time()` | Sorts all household tasks chronologically. |
+| Filtering | `Scheduler.filter_tasks()` | Filters across pets by pet name or completion status. |
+| Conflict handling | `Scheduler.detect_conflicts()` | Warns when exact task times collide. |
+| Recurring tasks | `Scheduler.mark_task_complete()` | Creates the next daily or weekly occurrence. |
 
-## 📸 Demo Walkthrough
+## Demo Walkthrough
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+1. `main.py` creates Jordan's household with Mochi and Luna.
+2. It adds three tasks at different and duplicate times.
+3. `Scheduler.sort_by_time()` prints tasks from both pets in chronological order.
+4. `Scheduler.filter_tasks()` shows only Mochi's tasks.
+5. `Scheduler.detect_conflicts()` prints a warning for the two 08:00 tasks, and recurrence creates tomorrow's walk.
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->

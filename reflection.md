@@ -4,13 +4,11 @@
 
 **a. Initial design**
 
-- Briefly describe your initial UML design.
-- What classes did you include, and what responsibilities did you assign to each?
+My initial UML design included four classes required by the project. The `Owner` class stores the owner's name and pets. The `Pet` class stores identifying information and its collection of tasks. The `Task` class represents an activity with a description, scheduled time, frequency, due date, and completion status. Finally, the `Scheduler` class retrieves tasks from the owner, organizes them, and manages scheduling algorithms across all pets.
 
 **b. Design changes**
 
-- Did your design change during implementation?
-- If yes, describe at least one change and why you made it.
+During implementation, I changed the design from a single-pet care-plan model to the rubric's required multi-pet model. `Owner` now owns a list of pets and provides `get_all_tasks()`, which gives `Scheduler` one reliable source for household-wide operations. I also renamed the activity class to `Task`, added recurrence and due dates, and moved sorting, filtering, conflict detection, and recurrence management into `Scheduler`. These changes make the UML relationships match the working code and allow one schedule to include tasks from multiple pets.
 
 ---
 
@@ -18,13 +16,11 @@
 
 **a. Constraints and priorities**
 
-- What constraints does your scheduler consider (for example: time, priority, preferences)?
-- How did you decide which constraints mattered most?
+The scheduler considers the household's pets, each task's scheduled time, completion status, and recurrence frequency. I treated the owner's task collection as the source of truth, sorted tasks chronologically, and filtered tasks by pet or completion status so the same logic works across multiple pets.
 
 **b. Tradeoffs**
 
-- Describe one tradeoff your scheduler makes.
-- Why is that tradeoff reasonable for this scenario?
+The conflict detector checks exact matching times instead of calculating whether task durations overlap. This keeps the feature easy to understand and produces a useful warning without inventing task durations that are not part of the required `Task` model. A future version could add duration and detect all interval overlaps.
 
 ---
 
@@ -32,13 +28,11 @@
 
 **a. How you used AI**
 
-- How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
-- What kinds of prompts or questions were most helpful?
+I used the AI assistant to brainstorm the initial classes, review missing relationships, and turn the design into a multi-pet implementation. The most helpful prompts named the exact rubric requirement, such as asking how `Scheduler` should retrieve all tasks from an `Owner` instead of reading from one pet.
 
 **b. Judgment and verification**
 
-- Describe one moment where you did not accept an AI suggestion as-is.
-- How did you evaluate or verify what the AI suggested?
+I did not keep the earlier single-pet scheduler design because it conflicted with the rubric's multi-pet requirement. I changed the model so `Owner.get_all_tasks()` is the scheduler's source, then verified it with a CLI demo and tests that sort tasks belonging to two different pets.
 
 ---
 
@@ -46,13 +40,11 @@
 
 **a. What you tested**
 
-- What behaviors did you test?
-- Why were these tests important?
+I tested completion status changes, adding a task to a pet, chronological sorting across multiple pets, filtering by pet, exact-time conflict warnings, and daily recurrence. These tests cover the core state change and the scheduler behaviors demonstrated by the CLI.
 
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
-- What edge cases would you test next if you had more time?
+I am reasonably confident because all five automated tests pass and the CLI demonstrates the full workflow. Next I would test malformed time strings, duplicate task objects, weekly recurrence, and conflicts caused by overlapping durations rather than exact matching times.
 
 ---
 
@@ -60,12 +52,12 @@
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+I am most satisfied that the scheduler genuinely works across a household of multiple pets instead of only holding a single pet's tasks.
 
 **b. What you would improve**
 
-- If you had another iteration, what would you improve or redesign?
+I would connect the Streamlit form directly to the new `Owner`, `Pet`, `Task`, and `Scheduler` classes and add task duration so conflict detection could handle overlapping intervals.
 
 **c. Key takeaway**
 
-- What is one important thing you learned about designing systems or working with AI on this project?
+I learned that the human developer must check whether generated code matches the system relationships and grading requirements, not just whether it runs. Small tests for ownership and multi-pet retrieval exposed design problems that a single happy-path example would have missed.
